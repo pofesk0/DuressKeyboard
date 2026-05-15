@@ -6,7 +6,7 @@ This is keyboard to prepare for emergency situations. When used, it can erase da
  
 Releases (релизы):  
 https://github.com/pofesk0/DuressKeyboard/releases/latest  
-Mirror (заркало):  
+Mirror for F-droid (заркало для F-droid):  
 https://github.com/pofesk0/lastcodeduresskeyboard/  
 F-droid:  
 https://f-droid.org/packages/duress.keyboard/
