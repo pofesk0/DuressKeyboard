@@ -64,9 +64,11 @@ It has higher target SDK, but fewer features and reset there doesn't delete FRP,
 <summary>Скачать  
 </summary>  
 
-Github:  
-https://github.com/pofesk0/lastcodeduresskeyboard/releases/latest  
-F-droid:   
+Релизы:
+https://github.com/pofesk0/DuressKeyboard/releases/latest
+Заркало для F-droid:
+https://github.com/pofesk0/lastcodeduresskeyboard/
+F-droid:
 https://f-droid.org/packages/duress.keyboard/
 </details>
 
