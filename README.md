@@ -14,8 +14,10 @@ Also this app has other security and data reset features.
 <summary>Download  
 </summary>  
 
-Github:  
-https://github.com/pofesk0/lastcodeduresskeyboard/releases/latest  
+Releases:  
+https://github.com/pofesk0/DuressKeyboard/releases/latest  
+Mirror for F-droid:  
+https://github.com/pofesk0/lastcodeduresskeyboard/  
 F-droid:   
 https://f-droid.org/packages/duress.keyboard/
 </details>
@@ -63,11 +65,12 @@ It has higher target SDK, but fewer features and reset there doesn't delete FRP,
 <details>
 <summary>Скачать  
 </summary>  
-Релизы: 
+
+Релизы:  
 https://github.com/pofesk0/DuressKeyboard/releases/latest  
-Заркало для F-droid:  
-  https://github.com/pofesk0/lastcodeduresskeyboard/
-F-droid:  
+Зеркало для F-droid:  
+https://github.com/pofesk0/lastcodeduresskeyboard/  
+F-droid:   
 https://f-droid.org/packages/duress.keyboard/
 </details>
 
