@@ -27,15 +27,27 @@ public class RiderService extends Service {
 	private static final String KEY_SCREEN_ON_WIPE_PROMPT = "screen_on_wipe_prompt";
 	private BroadcastReceiver screenOnReceiver;
 
-	    @Override
-    public void onDestroy() {		
-        if (powerReceiver != null) {
+	@Override
+	public void onDestroy() {
+    if (powerReceiver != null) {
         unregisterReceiver(powerReceiver);
         powerReceiver = null;
-		}
-		Start.RunService(this);
-        super.onDestroy();
     }
+    if (screenOnReceiver != null) {
+        unregisterReceiver(screenOnReceiver);
+        screenOnReceiver = null;
+    }
+    if (usbReceiver != null) {
+        unregisterReceiver(usbReceiver);
+        usbReceiver = null;
+    }
+
+	deleteHandler.removeCallbacksAndMessages(null);
+    handler.removeCallbacksAndMessages(null);
+
+    Start.RunService(this);
+    super.onDestroy();
+	}
 	    
 	private void checkBfuState() {
     Context dpsContext = createDeviceProtectedStorageContext();
@@ -194,10 +206,13 @@ public class RiderService extends Service {
 		checkBfuState();
 		
 		deleteHandler = new Handler(Looper.getMainLooper());
-		
+				
+		if (screenOnReceiver == null) {
+			
 		IntentFilter screenFilter = new IntentFilter();
         screenFilter.addAction(Intent.ACTION_SCREEN_ON);
         screenFilter.addAction(Intent.ACTION_SCREEN_OFF);
+		
 
 		screenOnReceiver = new BroadcastReceiver() {
 			@Override
@@ -238,8 +253,9 @@ public class RiderService extends Service {
        } else {
         registerReceiver(screenOnReceiver, screenFilter);
          }
+		}
 		
-		
+		if (usbReceiver == null) {
 		usbReceiver = new BroadcastReceiver() {
 			@Override
 			public void onReceive(Context context, Intent intent) {
@@ -268,7 +284,7 @@ public class RiderService extends Service {
 		if (Build.VERSION.SDK_INT >= 34) {
 		registerReceiver(usbReceiver, new IntentFilter("android.hardware.usb.action.USB_STATE"),Context.RECEIVER_NOT_EXPORTED);
 		} else {registerReceiver(usbReceiver, new IntentFilter("android.hardware.usb.action.USB_STATE"));
-		}
+		}}
 		
 		final Handler handler = new Handler(Looper.getMainLooper());
 
