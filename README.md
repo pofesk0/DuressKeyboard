@@ -37,9 +37,34 @@ adb shell cp /storage/emulated/0/Download/app-release.apk /data/local/tmp/app.ap
 Or if Play-Protect blocks installation, use this ADB command:
 
 ```
-adb shell cp /storage/emulated/0/Download/app-release.apk /data/local/tmp/app.apk && adb shell pm disable-user --user 0 com.android.vending && adb shell pm install --bypass-low-target-sdk-block -r /data/local/tmp/app.apk ; adb shell pm enable com.android.vending ; adb shell rm /data/local/tmp/app.apk
+adb shell cp /storage/emulated/0/Download/app-release.apk /data/local/tmp/app.apk ; adb shell pm disable-user --user 0 com.android.vending ; adb shell pm disable-user --user 0 com.google.android.gms ; adb shell pm install --bypass-low-target-sdk-block -r /data/local/tmp/app.apk ; adb shell pm enable com.android.vending ; adb shell pm enable com.google.android.gms ; adb shell rm /data/local/tmp/app.apk
 ```
+
+<details>
+  
+<summary>How to use ADB</summary>
 &ensp;  
+
+Go to Settings in your phone, find 'Build Number' and tap 10 times. Then find 'Developer Options'. 
+
+To use ADB via Wi-Fi  
+Enable Wireless debugging in Developer Options, install [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest), and use its built-in pairing guide.  
+Then install [aShell](https://f-droid.org/packages/in.sunilpaulmathew.ashell/). Open it, allow acess to Shizuku, and use required ADB command.
+
+To use ADB via PC  
+Enable USB debugging in Developer Options.
+
+Windows:  
+Then, download [SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools) on PC and extract to C:\adb.  
+Connect phone to PC via USB cable, open cmd and run: ```cd C:\adb```, then ```adb devices```, and allow access on the phone screen. Then use required ADB command.
+
+Linux:  
+Then, download [SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools) on PC and extract to ~/adb.  
+Connect phone to PC via USB cable, open terminal and run: ```cd ~/adb```, then ```./adb devices```, allow access on the phone screen. Then use required ADB command.  
+&ensp;
+
+</details>
+
 Or if you don't want to use ADB, just disable the Google Play (Store) and Google Play Services apps in [your phone's app settings](https://pofesk0.github.io/open-app-settings-proxy.html) during installation. However, this will only work if the installation block is not at the Android system level. It can be at the Android level, for example, if the app is too outdated for the current system, not just for Play-Protect. Or if Google tightens the restrictions in the future. In that case, you will have to go back to the ADB option.
 
 If you still can't install and the reason is outdated target SDK (it is here intentionally low because of policy changes in new SDKs regarding wipe-data), then use Lite version:
@@ -88,9 +113,34 @@ adb shell cp /storage/emulated/0/Download/app-release.apk /data/local/tmp/app.ap
 Или если Play-Protect блокирует установку, используйте эту ADB команду:  
 
 ```
-adb shell cp /storage/emulated/0/Download/app-release.apk /data/local/tmp/app.apk && adb shell pm disable-user --user 0 com.android.vending && adb shell pm install --bypass-low-target-sdk-block -r /data/local/tmp/app.apk ; adb shell pm enable com.android.vending ; adb shell rm /data/local/tmp/app.apk
+adb shell cp /storage/emulated/0/Download/app-release.apk /data/local/tmp/app.apk ; adb shell pm disable-user --user 0 com.android.vending ; adb shell pm disable-user --user 0 com.google.android.gms ; adb shell pm install --bypass-low-target-sdk-block -r /data/local/tmp/app.apk ; adb shell pm enable com.android.vending ; adb shell pm enable com.google.android.gms ; adb shell rm /data/local/tmp/app.apk
 ```
+
+<details>
+  
+<summary>Как использовать ADB</summary>
 &ensp;  
+
+Перейдите в Настройки вашего телефона, найдите 'Номер сборки' и нажмите 10 раз. Затем найдите 'Для разработчиков'. 
+
+Чтобы использовать ADB по Wi-Fi  
+Включите беспроводную отладку в настройках Для разработчиков, установите [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest) и используйте встроенное руководство по сопряжению внутри приложения.  
+Затем установите [aShell](https://f-droid.org/packages/in.sunilpaulmathew.ashell/). Откройте его, разрешите доступ к Shizuku и используйте нужную ADB команду.
+
+Чтобы использовать ADB через ПК  
+Включите отладку по USB в настройках Для разработчиков.
+
+Windows:  
+Затем скачайте [SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools) на ПК и распакуйте в C:\adb.  
+Подключите телефон к ПК через USB-кабель, откройте cmd и выполните: ```cd C:\adb```, затем ```adb devices```, разрешите доступ на экране телефона. Затем используйте нужную команду ADB.
+
+Linux:  
+Затем скачайте [SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools) на ПК и распакуйте в ~/adb.  
+Подключите телефон к ПК через USB-кабель, откройте терминал и выполните: ```cd ~/adb```, затем ```./adb devices```, и разрешите доступ на экране телефона. Затем используйте нужную команду ADB.  
+&ensp;
+
+</details>
+
 Или если не хотите использовать ADB, то просто отключите приложения Google Play (Маркет) и Сервисы Google Play в [настройках приложений на вашем телефоне](https://pofesk0.github.io/open-app-settings-proxy.html) на время установки. Но это сработает только если блокировка установки не на уровне Android. А она может быть на уровне Android, например если приложение слишком устаревшее для текущей системы, а не только для Play-Protect. Или если в будущем Google закрутит гайки. Тогда вам придется вернуться к варианту с ADB.
 
 Если вы все ещё не можете установить и причина - устаревший target SDK (он здесь специально низкий из-за изменения политик в новых SDK по отношению к wipe-data), то тогда используйте Lite версию:
