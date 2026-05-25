@@ -50,44 +50,38 @@ public class SimpleKeyboardService extends InputMethodService {
 		updateShiftState();
 		stopFastDelete();
 	}
+	
+	private final ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public final void onServiceConnected(ComponentName name, IBinder service) {
 
-	private void BindHelper() {		
-            try {
-			
-			   try {
-                   Context appContext = getApplicationContext();
-                   Intent serviceIntent = new Intent(appContext, RiderService.class);
+        }
 
-                   appContext.bindService(serviceIntent, new ServiceConnection() {
-                       @Override
-                       public void onServiceConnected(ComponentName name, IBinder service) {                       
-                    
-                       }
+        @Override
+        public final void onServiceDisconnected(ComponentName name) {
+		BindHelper();	
+        }
+    };
 
-                       @Override
-                       public void onServiceDisconnected(ComponentName name) {                        
-                       BindHelper(); 
-                       }
-                   }, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_ABOVE_CLIENT);
-               } catch (Throwable BindError) {}
-			
-            } catch (Throwable ThreadStartError) {}        
-	}
+    private final void BindHelper() {
+    try {	
+	Intent serviceIntent = new Intent(this, RiderService.class);
+    bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_ABOVE_CLIENT);    
+    } catch (Throwable t) {} }
 
 	@Override
 	public void onCreate() {
-		super.onCreate();
+		super.onCreate();		
 		new Thread(() -> {
-		BindHelper();
+		  BindHelper();
 		}).start();	
 		try {
-		Intent serviceIntent = new Intent(this, RiderService.class);
-        startForegroundService(serviceIntent);
-        } catch (Throwable t) {}
-		
-		deleteHandler = new Handler(Looper.getMainLooper());							
-		
-		}
+		  Intent serviceIntent = new Intent(this, RiderService.class);
+          startForegroundService(serviceIntent);
+        } catch (Throwable t) {} 
+		deleteHandler = new Handler(Looper.getMainLooper());
+	}
+	
 	private Handler handler = new Handler(Looper.getMainLooper());	
 
 	private boolean isEnabledIndex(int index) {
