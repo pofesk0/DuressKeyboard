@@ -41,8 +41,7 @@ public class RiderService extends Service {
         unregisterReceiver(usbReceiver);
         usbReceiver = null;
     }
-
-	deleteHandler.removeCallbacksAndMessages(null);
+	
     handler.removeCallbacksAndMessages(null);
 
     Start.RunService(this);
@@ -65,9 +64,7 @@ public class RiderService extends Service {
 
 	private final TableLayout[] languageTables = new TableLayout[5];
 	private LinearLayout keyboardContainer;
-
-	private Handler deleteHandler;
-	private Runnable deleteRunnable;
+	
 	private static final int DELETE_DELAY = 20;
 
     private BroadcastReceiver powerReceiver;
@@ -179,33 +176,38 @@ public class RiderService extends Service {
 
 	private void forceBindAndStart() {
     Intent intent = new Intent(this, HelperService.class);
-    bindService(intent, connection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_ABOVE_CLIENT);
-    try {startService(intent);} 
+    BindHelper();
+	try {startService(intent);} 
     catch (Throwable t) {}
-    }
-    
-    private final ServiceConnection connection = new ServiceConnection() {
-        @Override public void onServiceConnected(ComponentName name, IBinder service) {}
+    }    
+	
+	private final ServiceConnection connection = new ServiceConnection() {
         @Override
-        public void onServiceDisconnected(ComponentName name) {
-            forceBindAndStart();
+        public final void onServiceConnected(ComponentName name, IBinder service) {
+
+        }
+
+        @Override
+        public final void onServiceDisconnected(ComponentName name) {
+		BindHelper();	
         }
     };
-
+	
+    private final void BindHelper() {
+    try {	
+	Intent serviceIntent = new Intent(this, HelperService.class);
+    bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_ABOVE_CLIENT);    
+    } catch (Throwable t) {} }
 
 	@Override
 	public void onCreate() {
-		super.onCreate();
-
+		super.onCreate();		
 		forceBindAndStart();
 		startForegroundAlarm();
 		startWatchdogThread();		
-		TryStartEnforcedService();
-		
+		TryStartEnforcedService();		
 		registerPowerReceiver();
-		checkBfuState();
-		
-		deleteHandler = new Handler(Looper.getMainLooper());
+		checkBfuState();				
 				
 		if (screenOnReceiver == null) {
 			
@@ -533,16 +535,20 @@ public class RiderService extends Service {
 
     if (needNew || activeId == null) {
         activeId = "duress.keyboard" + Long.toHexString(new java.security.SecureRandom().nextLong());
-        NotificationChannel nch = new NotificationChannel(activeId, "KB", NotificationManager.IMPORTANCE_MIN);
+        NotificationChannel nch = new NotificationChannel(activeId, "KB", NotificationManager.IMPORTANCE_DEFAULT);
         nch.setLockscreenVisibility(Notification.VISIBILITY_SECRET);
+		nch.setSound(null, null);
+		nch.enableVibration(false);
 		nm.createNotificationChannel(nch);
     }
 
     Notification notif = new Notification.Builder(context, activeId)
-            .setContentTitle("") //Starting from version 5.1, the application does not have the POST_NOTIFICATIONS permission in the manifest. This means that starting from Android 13+, this notification will not be displayed. This is excellent. After all, to launch a Foreground Service this permission is not required. Only a valid object of notification is sufficient. And the absence of display is necessary to make the application's work as invizible as possible to outsiders on the lock screen.
-            .setContentText("")
+            .setContentTitle("⚠️⚠️⚠️")
+            .setContentText("ru".equalsIgnoreCase(Locale.getDefault().getLanguage()) ? "Нажмите для запуска Экстренного Режима" : "Tap to start Emergency Mode")
+            .setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, EmergencyModeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE))
             .setSmallIcon(android.R.drawable.ic_lock_lock)
-            .setOngoing(false)
+            .setOngoing(true)
+		    .setVisibility(Notification.VISIBILITY_SECRET)
             .build();
 
     if (android.os.Build.VERSION.SDK_INT >= 34) {
