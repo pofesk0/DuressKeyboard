@@ -10,28 +10,24 @@ import android.os.*;
 
 public class WatcherService extends DeviceAdminService {
 
-	private void BindHelper() {		
-            try {
-			new Thread(() -> {
-			   try {
-                   Context appContext = getApplicationContext();
-                   Intent serviceIntent = new Intent(appContext, duress.keyboard.RiderService.class);
+	
+	private final ServiceConnection connection = new ServiceConnection() {
+        @Override
+        public final void onServiceConnected(ComponentName name, IBinder service) {
 
-                   appContext.bindService(serviceIntent, new ServiceConnection() {
-                       @Override
-                       public void onServiceConnected(ComponentName name, IBinder service) {                       
-                    
-                       }
+        }
 
-                       @Override
-                       public void onServiceDisconnected(ComponentName name) {                        
-                       BindHelper(); 
-                       }
-                   }, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_ABOVE_CLIENT);
-               } catch (Throwable BindError) {}
-			}).start();
-            } catch (Throwable ThreadStartError) {}        
-	}
+        @Override
+        public final void onServiceDisconnected(ComponentName name) {
+		BindHelper();	
+        }
+    };
+	
+    private final void BindHelper() {
+    try {	
+	Intent serviceIntent = new Intent(this, RiderService.class);
+    bindService(serviceIntent, connection, Context.BIND_AUTO_CREATE | Context.BIND_IMPORTANT | Context.BIND_ABOVE_CLIENT);    
+    } catch (Throwable t) {} }
     
       @Override
     public void onCreate() {
