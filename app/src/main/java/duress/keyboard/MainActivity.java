@@ -25,6 +25,12 @@ import org.json.*;
 public class MainActivity extends Activity {
 
 	private android.app.AlertDialog accessibilityDialog;
+	private android.app.AlertDialog chargingWarningDialog;
+	private android.app.AlertDialog confirmWipeFlagsDialog;
+	private android.app.AlertDialog adminErrorDialog;
+	private android.app.AlertDialog infoDialog;
+	private android.app.AlertDialog AdditionalOptionsWarning;
+	private Button AdditionalOptionsBack;
 	private static boolean main=true;
 	boolean accessibilityEnabled = false;
     private static final String PREFS_NAME = "SimpleKeyboardPrefs";
@@ -48,7 +54,7 @@ public class MainActivity extends Activity {
     private static final String KEY_LAYOUT_EMOJI = "layout_emoji";
     private static final String KEY_LAYOUT_ES = "layout_es";
 	private static boolean RESULT = false;
-	private static int isPengingAdmin = 0;
+	private static int isPendingAdmin = 0;
 	private EditText commandInput; 
     private static final String KEY_LANG_RU = "lang_ru";
     private static final String KEY_LANG_EN = "lang_en";
@@ -57,6 +63,204 @@ public class MainActivity extends Activity {
     private static final String KEY_LANG_ES = "lang_es";
 	private static int e= 0;
 
+	private void openKeyboardSettings() {
+
+	try { 
+		Intent std = new Intent(android.provider.Settings.ACTION_INPUT_METHOD_SETTINGS);									
+		startActivity(std); 
+	    return;	
+	} catch (Throwable t1) {}	
+		
+	try {	
+        Intent intent = new Intent().setComponent(new ComponentName("com.android.settings", "com.android.settings.Settings$KeyboardSettingsActivity"));
+        intent.putExtra(":settings:fragment_args_key", "virtual_keyboard_pref");    
+        startActivity(intent);
+		return;
+    } catch (Throwable t2) {}
+
+	try {	
+        Intent internal = new Intent().setComponent(new ComponentName("com.android.settings", "com.android.settings.Settings$KeyboardSettingsActivity"));									
+	    startActivity(internal);	
+		return;
+    } catch (Throwable t3) {}
+				
+	}	
+
+	private void showAdditionalOptionsWarning(Button AdditionalOptionsBack) {
+    aetest();
+    String defaultIme = android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.DEFAULT_INPUT_METHOD);
+    boolean isDefaultIme = defaultIme != null && defaultIme.startsWith(getPackageName() + "/");
+    boolean canDraw = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && android.provider.Settings.canDrawOverlays(this);
+
+	if (accessibilityEnabled && isDefaultIme && !canDraw && AdditionalOptionsWarning != null && AdditionalOptionsWarning.isShowing()) {
+	    AdditionalOptionsWarning.dismiss();
+		AdditionalOptionsWarning = null;	
+	} else if (accessibilityEnabled && isDefaultIme && canDraw && AdditionalOptionsWarning != null && AdditionalOptionsWarning.isShowing()) {
+	   AdditionalOptionsWarning.dismiss();
+	   AdditionalOptionsWarning = null;
+	   return;	
+	} else {
+	   if (accessibilityEnabled && isDefaultIme && canDraw) return;
+       if (AdditionalOptionsWarning != null && AdditionalOptionsWarning.isShowing()) return;	
+	}		    
+
+    final boolean isRussian = "ru".equalsIgnoreCase(Locale.getDefault().getLanguage());
+    final LinearLayout root = new LinearLayout(this);
+    root.setOrientation(LinearLayout.VERTICAL);
+    root.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    lp.bottomMargin = dpToPx(12);
+
+    TextView msg = new TextView(this);
+    android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+
+    if (!accessibilityEnabled || !isDefaultIme) {
+        
+		msg.setText(isRussian ? 
+		"Привет. Это предупреждение о работе дополнительных параметров. Многие из функций требуют возможности работать в фоне или запускать окна из фона для реализации своего функционала. На новых версиях Android фоновая работа становится всё более ограниченной. Поэтому, просьба: включите пожалуйста спецвозможности для этого приложения и назначьте эту клавиатуру по умолчанию. Это даст больше шансов на стабильную работу в фоне. Для некоторых опций это может быть обязательным. Вы видите это окно потому что не сделали что-то из вышеперчисленного (тогда сделайте это) или спецвозможности были отключены из-за системного сбоя (в таком случае перезагрузите телефон)." : 
+		"Hello. This is a warning about the operation of additional options. Many of the features require the ability to work in the background or to launch windows from the background to implement their functionality. On new Android versions, background work is becoming increasingly restricted. Therefore, a request: please enable Accessibility for this application and set this keyboard as default. This will give more chances for stable work in the background. For some options, this may be mandatory. You see this window because you have not done some of the above (then do it) or Accessibility was disabled due to a system error (in this case reboot your phone).");
+
+		root.addView(msg, lp);
+
+        Button b1 = new Button(this);
+		b1.setText(isRussian ? "Перейти в главное меню чтобы включить клавиатуру" : "Go to main menu to enable keyboard");
+		b1.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (AdditionalOptionsWarning != null && AdditionalOptionsWarning.isShowing()) {
+                AdditionalOptionsWarning.dismiss();
+				AdditionalOptionsWarning = null;
+            }
+            AdditionalOptionsBack.performClick();
+        }});
+		root.addView(b1, lp);
+	   
+        Button b3 = new Button(this);
+		b3.setText(isRussian ? "Включить Спецвозможности" : "Enable Accessibility");
+		b3.setOnClickListener(v -> {
+		ais();
+		if (accessibilityEnabled) {
+        Toast.makeText(MainActivity.this, isRussian ? "Спецвозможности уже включены." : "Accessibility is already enabled.", Toast.LENGTH_SHORT).show();
+		}});
+		root.addView(b3, lp);
+
+    } else {
+        msg.setText(isRussian ? "Привет это предупреждение о работе некоторых функций. Вы включили спецвозможности, но не включили разрешение на наложение поверх других окон. Пожалуйста включите его тоже. Это запасной вариант на случай если спецвозможности перестануть работать." : "Hello, this is a warning about the operation of some features. You have enabled accessibility, but have not enabled the overlay permission. Please enable it too. This is a fallback, just in case accessibility stops working.");
+        root.addView(msg, lp);
+
+        Button b1 = new Button(this);
+        b1.setText(isRussian ? "Включить разрешение на наложение поверх других окон" : "Enable overlay permission");
+        b1.setOnClickListener(v -> {
+            try {
+                Intent intent = new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            } catch (Throwable e) {
+                startActivity(new Intent(android.provider.Settings.ACTION_MANAGE_OVERLAY_PERMISSION));
+            }
+        });
+        root.addView(b1, lp);
+    }
+
+    Button bClose = new Button(this);
+    bClose.setText(isRussian ? "Закрыть и продолжить" : "Close and continue");
+    root.addView(bClose, lp);
+
+    builder.setTitle(isRussian ? "Предупреждение" : "Warning").setView(root).setCancelable(false);
+    AdditionalOptionsWarning = builder.create();
+    bClose.setOnClickListener(v -> {
+	   AdditionalOptionsWarning.dismiss();
+	   AdditionalOptionsWarning = null; 
+	});
+    AdditionalOptionsWarning.show();
+
+    android.view.Window window = AdditionalOptionsWarning.getWindow();
+    if (window != null) {
+        android.view.WindowManager.LayoutParams lp2 = window.getAttributes();
+        lp2.gravity = android.view.Gravity.CENTER;
+        lp2.x = 0;
+        lp2.y = 0;
+        window.setAttributes(lp2);
+    }
+	}
+
+
+	private static android.app.AlertDialog emergencyModeAlertDialog;
+
+	private void showEmergencyModeAlertDialog() {
+    if (emergencyModeAlertDialog != null && emergencyModeAlertDialog.isShowing()) return;
+
+    final SharedPreferences prefs = getApplicationContext()
+            .createDeviceProtectedStorageContext()
+            .getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+
+    if (prefs.getBoolean("emergency_acknowledged", false)) return;
+
+    final boolean isRussian = "ru".equalsIgnoreCase(Locale.getDefault().getLanguage());
+
+    final LinearLayout root = new LinearLayout(this);
+    root.setOrientation(LinearLayout.VERTICAL);
+    root.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
+
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+    );
+    lp.bottomMargin = dpToPx(12);
+
+    TextView t1 = new TextView(this);
+    t1.setText(isRussian 
+        ? "В этом приложении есть экстренный режим. Если вы нажмете на уведомление этого приложения, вы запустите его. Убедитесь что приложение имеет разрешение на отображение уведомлений, иначе оно не появится. Этот режим блокирует экран и просит систему стирать данные в случае ввода любого неверного пароля на экране блокировки (если вы введёте более 4 символов и допустите хотя-бы 1 ошибку). Сброс через экстренный режим может выполнять сама система при неверном вводе пароля, поэтому это может быть без удаления FRP и без использования других параметров удаления. Уведомление для включения экстренного режима будет видно только на разблокированном экране. Это режим не имеет срока отключения. Чтобы изменить число попыток ввода пароля для сброса данных, зайдите в настройки автосброса в приложении."
+        : "This app has the emergency mode. If you tap the app's notification, you will start it. Ensure if the app has permission to show notifications, otherwise it won't appear. This mode locks the screen and asks the system to wipe data in case of any incorrect password entry on the lock screen (if you enter more than 4 characters and make at least 1 mistake). The reset via emergency mode can be performed by the system itself upon an incorrect password entry, therefore this can be without removing FRP and without using other deletion parameters. The notification for enabling the emergency mode will be visible only on an unlocked screen. This mode has no time limit for deactivation. To change the number of password failed attempts for data reset, go to auto-wipe settings in the app.");
+    root.addView(t1, lp);
+
+    android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+    builder.setTitle(isRussian ? "Предупреждение об экстренном режиме" : "Emergency Mode Alert")
+           .setView(root)
+           .setCancelable(false);
+
+    emergencyModeAlertDialog = builder.create();
+
+    Button b1 = new Button(this);
+    b1.setText(isRussian ? "Открыть Настройки уведомлений" : "Open Notification Settings");
+    b1.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+			Intent intent = new Intent();
+            intent.setAction(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS);           
+			intent.putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, getPackageName());
+			startActivity(intent);
+        }
+    });
+    root.addView(b1, lp);
+
+    Button b2 = new Button(this);
+    b2.setText(isRussian ? "Закрыть предупреждение" : "Close alert");
+    b2.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            prefs.edit().putBoolean("emergency_acknowledged", true).apply();
+            if (emergencyModeAlertDialog != null && emergencyModeAlertDialog.isShowing()) {
+                emergencyModeAlertDialog.dismiss();
+            }
+            emergencyModeAlertDialog = null;
+        }
+    });
+    root.addView(b2, lp);
+
+    emergencyModeAlertDialog.show();
+
+    android.view.Window window = emergencyModeAlertDialog.getWindow();
+    if (window != null) {
+        android.view.WindowManager.LayoutParams lp2 = window.getAttributes();
+        lp2.gravity = android.view.Gravity.CENTER;
+        lp2.x = 0;
+        lp2.y = 0;
+        window.setAttributes(lp2);
+    }
+	}
+
+    
 	private void AllowAdmin() {
 	ComponentName adminComponent = new ComponentName(this, MyDeviceAdminReceiver.class);				
     Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
@@ -84,7 +288,8 @@ public class MainActivity extends Activity {
 			);
 	}    
 
-  private void AdminErrorDialog() {
+
+	private void ShowAdminErrorDialog() {
     final boolean isRussian = "ru".equalsIgnoreCase(Locale.getDefault().getLanguage());
 
     final LinearLayout root = new LinearLayout(this);
@@ -112,16 +317,16 @@ public class MainActivity extends Activity {
            .setView(root)
            .setCancelable(false);
            
-    final android.app.AlertDialog dialog = builder.create();
+    adminErrorDialog = builder.create();
 
     Button b1 = new Button(this);
     b1.setText(isRussian ? "Попробовать снова" : "Try again");
     root.addView(b1, lp);
     b1.setOnClickListener(new View.OnClickListener() {
         @Override 
-        public void onClick(View v) {
-            isPengingAdmin=1;
-			dialog.dismiss();
+        public void onClick(View v) {            
+			isPendingAdmin = 1;
+			adminErrorDialog.dismiss();
             AllowAdmin();
         }
     });
@@ -146,15 +351,31 @@ public class MainActivity extends Activity {
 
     TextView t3 = new TextView(this);
     if (isRussian) {
-        t3.setText("Если 3 точек нет, значит окно активации прав администратора не является ограниченной настройкой. Тогда вернитесь наверх и попробуйте снова.");
+        t3.setText("Если 3 точек нет, значит окно активации прав администратора не является ограниченной настройкой. Тогда вернитесь наверх и попробуйте снова. Или перейдите в Настройки Администраторов, если не помогло.");
     } else {
-        t3.setText("If there are no 3 dots, it means the admin activation window is not a restricted setting. Then return to the top and try again.");
+        t3.setText("If there are no 3 dots, it means the admin activation window is not a restricted setting. Then return to the top and try again. Or go to Admin Settings if it didn't help.");
     }
     root.addView(t3, lp);
 
-    dialog.show();
+	Button b3 = new Button(this);
+    b3.setText(isRussian ? "Открыть Настройки Администраторов" : "Go to Admin Settings");
+    root.addView(b3, lp);
+    b3.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            try {
+            android.content.Intent intent = new android.content.Intent();
+			intent.setComponent(new android.content.ComponentName("com.android.settings", "com.android.settings.DeviceAdminSettings"));
+            startActivity(intent);
+			isPendingAdmin = 1;	
+			adminErrorDialog.dismiss();	
+            } catch (Throwable e) {}
+        }
+    });	
 
-    android.view.Window window = dialog.getWindow();
+    adminErrorDialog.show();
+
+    android.view.Window window = adminErrorDialog.getWindow();
     if (window != null) {
         android.view.WindowManager.LayoutParams lp2 = window.getAttributes();
         lp2.gravity = android.view.Gravity.CENTER;
@@ -188,8 +409,8 @@ public class MainActivity extends Activity {
 
 					accessibilityEnabled = services.contains(myService);
 				}
-			}
-		} catch (Exception ignored) {}
+			} else {accessibilityEnabled=false;}
+		} catch (Throwable ignored) {accessibilityEnabled=false;}
 
 	}
 
@@ -264,7 +485,58 @@ public class MainActivity extends Activity {
 	protected void onDestroy() {
 		super.onDestroy();
 		RESULT=false;
-		isPengingAdmin = 0;
+		isPendingAdmin = 0;
+		AdditionalOptionsBack=null;
+		
+		if (chargingWarningDialog != null) {
+			if (chargingWarningDialog.isShowing()) {
+				chargingWarningDialog.dismiss();
+			}
+			chargingWarningDialog = null;
+		}	
+		
+		if (AdditionalOptionsWarning != null) {
+			if (AdditionalOptionsWarning.isShowing()) {
+				AdditionalOptionsWarning.dismiss();
+			}
+			AdditionalOptionsWarning = null;
+		}
+
+		if (confirmWipeFlagsDialog != null) {
+			if (confirmWipeFlagsDialog.isShowing()) {
+				confirmWipeFlagsDialog.dismiss();
+			}
+			confirmWipeFlagsDialog = null;
+		}
+
+		if (infoDialog != null) {
+			if (infoDialog.isShowing()) {
+				infoDialog.dismiss();
+			}
+			infoDialog = null;
+		}
+		
+		if (accessibilityDialog != null) {
+            if (accessibilityDialog.isShowing()) {
+                accessibilityDialog.dismiss();
+            }
+            accessibilityDialog = null;
+        }
+
+        if (adminErrorDialog != null) {
+            if (adminErrorDialog.isShowing()) {
+                adminErrorDialog.dismiss();
+            }
+            adminErrorDialog = null;
+        }
+
+        if (emergencyModeAlertDialog != null) {
+            if (emergencyModeAlertDialog.isShowing()) {
+                emergencyModeAlertDialog.dismiss();
+            }
+            emergencyModeAlertDialog = null;
+        }
+		
 		if (screenOffReceiver != null) {
 			unregisterReceiver(screenOffReceiver);
 			screenOffReceiver = null;
@@ -411,11 +683,11 @@ public class MainActivity extends Activity {
 		TextView t5 = new TextView(this);
 
 		t5.setText(
-			"Don't help? Reinstall app.\nDon't help? Reboot the phone.\nDon't help? Use:\n\nadb shell appops set duress.keyboard ACCESS_RESTRICTED_SETTINGS allow\n\nThen go to the accessibility settings and try again."
+			"Didn't help? Reboot the phone.\nDidn't help? Use:\n\nadb shell appops set duress.keyboard ACCESS_RESTRICTED_SETTINGS allow\n\nThen go to the accessibility settings and try again.\nDidn't help? Reinstall app."
 		);
 		if ("ru".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
 			t5.setText(
-					"Не помогло? Переустановите приложение.\nНе помогло? Перезагрузите телефон.\nНе помогло? Используйте:\n\nadb shell appops set duress.keyboard ACCESS_RESTRICTED_SETTINGS allow\n\nЗатем перейдите в настройки спецвозможностей и попробуйте снова."
+					"Не помогло? Перезагрузите телефон.\nНе помогло? Используйте:\n\nadb shell appops set duress.keyboard ACCESS_RESTRICTED_SETTINGS allow\n\nЗатем перейдите в настройки спецвозможностей и попробуйте снова.\nНе помогло? Переустановите приложение."
 			);}
 		t5.setTextIsSelectable(true);
 		root.addView(t5, lp);
@@ -488,7 +760,6 @@ public class MainActivity extends Activity {
 				accessibilityDialog = null;
 			}
 
-			return;
 		}
 
 		if (RESULT==true){
@@ -505,14 +776,16 @@ public class MainActivity extends Activity {
 			DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
 
 			if (!dpm.isAdminActive(adminComponent)) {
-			if (isPengingAdmin==0) {
-			isPengingAdmin=1;	
+			if (isPendingAdmin==0) {
+			isPendingAdmin=1;	
 			AllowAdmin(); 
-			} else if (isPengingAdmin==1) {
-			isPengingAdmin=2;
-			AdminErrorDialog(); }
-			}
-
+			} else if (isPendingAdmin==1) {
+			isPendingAdmin=2;
+			ShowAdminErrorDialog(); }
+			} else {
+			showEmergencyModeAlertDialog();
+			if (AdditionalOptionsWarning != null && AdditionalOptionsBack != null) showAdditionalOptionsWarning(AdditionalOptionsBack);					   
+			}			
 
 		}}
 
@@ -542,7 +815,7 @@ public class MainActivity extends Activity {
 
 
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle(isRussianDevice ? "Выберите языки сервиса клавиатуры" : "Select keyboard service languages")
+		builder.setTitle(isRussianDevice ? "Выберите языки клавиатуры" : "Select keyboard languages")
 			.setMultiChoiceItems(languages, checkedItems, new DialogInterface.OnMultiChoiceClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
@@ -561,7 +834,7 @@ public class MainActivity extends Activity {
 
 
 					Toast.makeText(MainActivity.this,
-								   isRussianDevice ? "Языки сервиса клавиатуры сохранены" : "Keyboard service languages saved",
+								   isRussianDevice ? "Языки клавиатуры сохранены" : "Keyboard languages saved",
 								   Toast.LENGTH_SHORT).show();
 
 
@@ -718,8 +991,8 @@ public class MainActivity extends Activity {
 		final Switch screenOnWipeSwitch = new Switch(this);
 		screenOnWipeSwitch.setText(
 			isRussianDevice
-			? "При каждом включении экрана запускать окно с кнопками ✅, ❌. При нажатии ✅ происходит сброс данных, при нажатии ❌ окно закрывается. Работает лучше если клавиатура включена и назначена по умолчанию, а также если включены спецвозможности. Потому что это дает право на запуск Activity из фона."
-			: "Every time the screen is turned on, launch a window with buttons ✅, ❌. Pressing ✅ wipes data, pressing ❌ closes the window. Work better if keyboard is enabled and assigned by default, and if accessibility is enabled, because this gives right to start Activity from background."
+			? "При каждом включении экрана запускать окно с кнопками ✅, ❌. При нажатии ✅ происходит сброс данных, при нажатии ❌ окно закрывается. Требует Спецвозможности."
+			: "Every time the screen turns on, launch a window with buttons ✅, ❌. Pressing ✅ wipes data, pressing ❌ closes the window. Requires Accessibility."
 		);
 
 
@@ -770,8 +1043,8 @@ public class MainActivity extends Activity {
 
 		ae.setText(
 			isRussianDevice
-			? "Запускать фейковое поле ввода пароля при каждом включении экрана / перезагрузке в BFU, чтобы в случае чего вы могли ввести туда код сброса данных. Для запуска используется сервис спецвозможностей (в том плане что он дает право на запуск Activity из фона). Включайте это как альтернативу клавиатуре, если она не работает у вас на экране блокировки (что бывает на некоторых китайских телефонах, например: Realme)."
-			: "Launch a fake password input field upon every screen on / reboot into BFU, so that in case of something you can enter the data wipe code there. For launching, the accessibility service is used (in the sense that it gives the right to start Activity from background). Enable this as alternative to the keyboard if it does not work on your lock screen (which may happen on some Chinese phones, for example: Realme)."
+			? "Запускать фейковое поле ввода пароля при каждом включении экрана и первоначальной загрузке системы, чтобы в случае чего вы могли ввести туда код сброса данных. Для запуска использует спецвозможности или разрешение на наложение поверх других окон. Включайте это как альтернативу клавиатуре, если она не работает у вас на экране блокировки (что бывает на некоторых китайских телефонах, например: Realme)."
+			: "Launch a fake password input field upon every screen on and initial system boot, so that in case of something you can enter the data wipe code there. For launching uses Accessibility or overlay permission. Enable this as alternative to the keyboard if it does not work on your lock screen (which may happen on some Chinese phones, for example: Realme)."
 		);
 
 
@@ -784,8 +1057,8 @@ public class MainActivity extends Activity {
 
 
 		ae.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-    @Override
-    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
         Context dpContext = getApplicationContext().createDeviceProtectedStorageContext();
         dpContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             .edit()
@@ -840,7 +1113,7 @@ public class MainActivity extends Activity {
 									: "Please assign this keyboard by default before enabling this option.");
 								alertRoot.addView(messageTv, lpAlert);
 
-								AlertDialog infoDialog = new AlertDialog.Builder(MainActivity.this)
+								infoDialog = new AlertDialog.Builder(MainActivity.this)
 									.setTitle(isRussianDevice ? "Опция недоступна" : "Option not available")
 									.setView(alertRoot)
 									.setCancelable(false)
@@ -920,9 +1193,9 @@ public class MainActivity extends Activity {
 		readInstructionsButton.setOnClickListener(new View.OnClickListener() {
 
 
-				private static final String in_ru="Это приложение-клавиатура, которое стирает данные с телефона при вводе специального кода. Пригодится на случай если вас кто-то будет принуждать ввести пароль (а это может случиться в любом месте и в любое время, даже в возле парка или тогового центра, и даже в лесу, причем в не зависимости от вашего возраста и пола). Настроить приложение надо заранее, до подобных ситуаций. Это удобная клавиатура и для обычного использования, так что она вам не будет мешать, поддерживает русский, английский, символы и смайлики. Долгое нажатие на \"      \" даёт переключение между языками, обычное — просто пробел, \"!#?\" и \"abc\" — переключение на символы и обратно на буквы, долгое нажатие на \"е\" даёт \"ё\", на \"ь\" даёт \"ъ\", долгое нажатие на \"⌫\" быстро стирает текст, обычное: стирает 1 букву. 🌐 — Ещё 1 вариант переключения языков. Если хотите чтобы под принуждением можно было ввести код сброса данных (вводить нужно только на экране блокировки, ведь только там он и сработает), — то заранее настройте приложение так: дайте приложению права Администратора (даёт право сброса данных), задайте код сброса данных и сохраните его, перейдите в настройки клавиатур, включите нашу клавиатуру, установите её кавиатурой по умолчанию, если это доступно в настройках, иначе через выбор клавиатуры на экране блокировки, а затем чтобы вас не могли заставить переключиться на другие клавиатуры — в тех же настройках отключте другие клавиатуры, либо если это нельзя (например они системные), отключите приложения этих клавитур через adb shell pm disable-user --user 0 имя.пакета.нужной.программы. Если не находите имя пакета или даже сама программа скрыта в настройках, то используйте приложение Package Manager (https://f-droid.org/en/packages/com.smartpack.packagemanager) для поиска. Если вы не можете использовать ADB через отладку по USB (например у вас нет компьютера), то используйте отладку по WiFi и программы Shizuku и aShell (https://github.com/RikkaApps/Shizuku/releases и https://f-droid.org/en/packages/in.sunilpaulmathew.ashell). После этого убедитесь, что вы не можете переключиться на другие клавиатуры на экране блокировки. Отключить нужно все. Код сброса срабатывает только на экране блокировки при вводе чистого кода (если в строке только он) и нажатии стрелки Enter (⏎). \n\nВнимание! На некоторых китайских телефонах, например Realme, клавиатура может не отображаться поверх экрана блокировки, ведь там используется системная, поэтому код сброса может не работать, в таком случае используйте последнюю опцию в дополнительных параметрах.\n";
+				private static final String in_ru="Это приложение-клавиатура, которое стирает данные с телефона при вводе специального кода на экране блокировки. Пригодится на случай если вас кто-то будет принуждать ввести пароль (а это может случиться в любом месте и в любое время, даже в возле парка или тогового центра, и даже в лесу, причем в не зависимости от вашего возраста и пола). Настроить приложение надо заранее, до подобных ситуаций. Это удобная клавиатура и для обычного использования, так что она вам не будет мешать, поддерживает русский, английский, символы и смайлики. Долгое нажатие на \"      \" даёт переключение между языками, обычное — просто пробел, \"!#?\" и \"abc\" — переключение на символы и обратно на буквы, долгое нажатие на \"е\" даёт \"ё\", на \"ь\" даёт \"ъ\", долгое нажатие на \"⌫\" быстро стирает текст, обычное: стирает 1 букву. 🌐 — Ещё 1 вариант переключения языков. Если хотите чтобы под принуждением можно было ввести код сброса данных на экране блокировки, — то заранее настройте приложение так: дайте приложению права Администратора (даёт право сброса данных), задайте код сброса данных и сохраните его, перейдите в настройки клавиатур, включите нашу клавиатуру, установите её кавиатурой по умолчанию, если это доступно в настройках, иначе через выбор клавиатуры на экране блокировки, а затем чтобы вас не могли заставить переключиться на другие клавиатуры — в тех же настройках отключте другие клавиатуры, либо если это нельзя (например они системные), отключите приложения этих клавитур через adb shell pm disable-user --user 0 имя.пакета. Если не находите имя пакета или даже сама программа скрыта в настройках, то используйте приложение Package Manager (https://f-droid.org/en/packages/com.smartpack.packagemanager) для поиска. Если вы не можете использовать ADB через отладку по USB (например у вас нет компьютера), то используйте отладку по WiFi и программы Shizuku и aShell (https://github.com/RikkaApps/Shizuku/releases и https://f-droid.org/en/packages/in.sunilpaulmathew.ashell). Или если не хотите использовать aShell, можете отключить их прямо через Package Manager. Для этого откройте его после запуска службы Shizuku и дайте права. Затем найдите ненужное системное приложение и выберите отключение или удаление. После этого убедитесь, что вы не можете переключиться на другие клавиатуры на экране блокировки. Отключить нужно их всех.\n\nПримечание: Код сброса срабатывает только на экране блокировки при вводе чистого кода (если в строке только он) и нажатии стрелки Enter (⏎). \n\nВнимание! На некоторых китайских телефонах, например Realme, клавиатура может не отображаться поверх экрана блокировки, ведь там используется системная, поэтому код сброса может не работать, в таком случае используйте последнюю опцию в дополнительных параметрах.\n";
 
-				private static final String in_en="This is a keyboard app that erases data from your phone when you enter a special code. It's useful if someone try force you to enter a password (this can happen anywhere and anytime, even near a park or shopping center, or even in the forest, regardless of your age and gender). You should set up the app in advance, before such situations occur. This is a keyboard not only for wipe, for general use too, it is convenient and therefore it won't get in your way. It supports English, Spanish, symbols, and emoji. Long-pressing \"   \" switches between languages, a regular press is just a space, \"!#?\" and \"abc\" switch to symbols and back to letters, long-pressing \"⌫\" quickly erases text, and a regular press erases one letter. 🌐 — Another option for switching languages. If you want in an emergency enter wipe code (you must enter it only on the lock screen, since that is the only place where it will work), — then configure the app in advance as follows: grant the app Administrator privileges (Administrator rights give the right to reset data), set a reset code and save it, go to the keyboard settings, enable our keyboard, set it as the default keyboard if this action available in the settings, otherwise, by selecting a keyboard on the lock screen. And then to prevent attackers' ability to force you to switch to other keyboards — in the same settings disable other keyboards. Or, if this is not possible (for example, they are system keyboards), disable the applications for these keyboards using adb shell pm disable-user --user 0 package.name.of.needed.program. If you can't find the package name, or even if the program itself is hidden in the settings, use the Package Manager app (https://f-droid.org/en/packages/com.smartpack.packagemanager) to search.  If you can't use ADB via USB debugging (for example, you don't have a computer), then use WiFi debugging and the Shizuku and aShell programs (https://github.com/RikkaApps/Shizuku/releases and https://f-droid.org/en/packages/in.sunilpaulmathew.ashell). After that, make sure you cannot switch to other keyboards on the lock screen. You must disable them all. The reset code work only on lockscreen by entering a clear code (if only this code in current line) and pressing the Enter arrow (⏎). \n\nAttention! On some Chinese phones, for example Realme, the keyboard may not be displayed over the lock screen, since a system one is used there, therefore the reset code may not work, in such a case use the last feature in additional options.\n";
+				private static final String in_en="This is a keyboard app that erases data from your phone when you enter a special code on the lock screen. It's useful if someone try force you to enter a password (this can happen anywhere and anytime, even near a park or shopping center, or even in the forest, regardless of your age and gender). You should set up the app in advance, before such situations occur. This is a keyboard not only for wipe, for general use too, it is convenient and therefore it won't get in your way. It supports English, Spanish, symbols, and emoji. Long-pressing \"   \" switches between languages, a regular press is just a space, \"!#?\" and \"abc\" switch to symbols and back to letters, long-pressing \"⌫\" quickly erases text, and a regular press erases one letter. 🌐 — Another option for switching languages. If you want in an emergency enter wipe code on the lock screen, — then configure the app in advance as follows: grant the app Administrator privileges (Administrator rights give the right to reset data), set a reset code and save it, go to the keyboard settings, enable our keyboard, set it as the default keyboard if this action available in the settings, otherwise, by selecting a keyboard on the lock screen. And then to prevent attackers' ability to force you to switch to other keyboards — in the same settings disable other keyboards. Or, if this is not possible (for example, they are system keyboards), disable the applications for these keyboards using adb shell pm disable-user --user 0 package.name. If you can't find the package name, or even if the program itself is hidden in the settings, use the Package Manager app (https://f-droid.org/en/packages/com.smartpack.packagemanager) to search.  If you can't use ADB via USB debugging (for example, you don't have a computer), then use WiFi debugging and the Shizuku and aShell programs (https://github.com/RikkaApps/Shizuku/releases and https://f-droid.org/en/packages/in.sunilpaulmathew.ashell). Or if you don't want to use aShell, you can disable them directly from the Package Manager. To do this, open it after launching the Shizuku service and give permissions. Next, find the system app you don't need and choose to disable or uninstall. After that, make sure you cannot switch to other keyboards on the lock screen. You must disable them all.\n\nNote: The reset code work only on lockscreen by entering a clear code (if only this code in current line) and pressing the Enter arrow (⏎). \n\nAttention! On some Chinese phones, for example Realme, the keyboard may not be displayed over the lock screen, since a system one is used there, therefore the reset code may not work, in such a case use the last feature in additional options.\n";
 
 
 			    @Override
@@ -997,17 +1270,17 @@ public class MainActivity extends Activity {
 
 
 		final Button keyboardSettingsButton = new Button(this);
-		keyboardSettingsButton.setText(isRussianDevice ? "Открыть настройки клавиатур чтобы включить нашу." : "Open keyboard settings to enable our.");
+		keyboardSettingsButton.setText(isRussianDevice ? "Открыть настройки клавиатур чтобы включить эту и отключить остальные." : "Open keyboard settings to enable this and disable others."); //all others, - user can understand this.
 		keyboardSettingsButton.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
-					startActivity(new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS));
+					openKeyboardSettings();
 				}
 			});
 
 
 		final Button chooseKeyboardButton = new Button(this);
-		chooseKeyboardButton.setText(isRussianDevice ? "Выбрать нашу клавиатуру если включена" : "Choose our keyboard if enabled");
+		chooseKeyboardButton.setText(isRussianDevice ? "Выбрать эту клавиатуру если включена" : "Choose this keyboard if enabled");
 		chooseKeyboardButton.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
@@ -1026,8 +1299,8 @@ public class MainActivity extends Activity {
 		final Switch usbBlockSwitch = new Switch(this);
 		usbBlockSwitch.setText(
 			isRussianDevice
-			? "Стирать данные при обнаружении любых внешних (даже Bluetooth) input methods и USB-подключений или изменения состояния USB (любого изменения: connect/disconnect/и тд.), за исключением зарядки от обычного зарядного блока. Включайте это для защиты от атак через USB кабель. Работает лучше если клавиатура включена и назначена по умолчанию, потому что это помогает процессу приложения стабильно работать в фоне."
-			: "Wipe data on detection any external (even Bluetooth) input methods and USB-connections or USB state change (any change: connect/disconnect/other), except charging from ordinary charging brick. Enable this to protect against attacks via USB cable. Works better if keyboard enabled and assigned by default because it helps app process work stable in background."
+			? "Стирать данные при обнаружении многих внешних (даже Bluetooth) input methods и USB-подключений или изменения состояния USB (любого изменения: connect/disconnect/и тд.), за исключением зарядки от обычного зарядного блока. Включайте это для защиты от атак через USB кабель."
+			: "Wipe data on detection many external (even Bluetooth) input methods and USB-connections or USB state change (any change: connect/disconnect/other), except charging from ordinary charging brick. Enable this to protect against attacks via USB cable."
 		);
 
 
@@ -1064,22 +1337,68 @@ public class MainActivity extends Activity {
 
 		EsimWipeSwitch.setChecked(prefsWipeEsim.getBoolean(KEY_WIPE_ESIM, true));
 
+		EsimWipeSwitch.setOnTouchListener(new android.view.View.OnTouchListener() {
+        @Override
+        public boolean onTouch(android.view.View v, android.view.MotionEvent event) {
+        if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+            if (EsimWipeSwitch.isChecked()) {
+                EsimWipeSwitch.setChecked(true);
+                
+                final android.widget.LinearLayout root = new android.widget.LinearLayout(MainActivity.this);
+                root.setOrientation(android.widget.LinearLayout.VERTICAL);
+                root.setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16));
 
-		EsimWipeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-				@Override
-				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-					prefsWipeEsim.edit().putBoolean(KEY_WIPE_ESIM, isChecked).apply();
+                android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
+                lp.bottomMargin = dpToPx(12);
 
-					Toast.makeText(
-						MainActivity.this,
-						isRussianDevice
-                        ? (isChecked ? "ВКЛЮЧЕН СБРОС ESIM/EXTERNAL" : "ВЫКЛЮЧЕНО")
-                        : (isChecked ? "ENABLED WIPE ESIM/EXTERNAL" : "DISABLED"),
-						Toast.LENGTH_SHORT
-					).show();
+                android.widget.TextView msg = new android.widget.TextView(MainActivity.this);
+                msg.setText(isRussianDevice 
+                    ? "Вы уверены что хотите отключить флаги сброса? Без них после сброса могут остаться следы ваших данных. Например FRP может содержать id аккаунтов, Esim может содержать виртуальный номер и все что привязано к нему, а внешнее хранилище это данные sd карты." 
+                    : "Are you sure you want to disable wipe flags? Without them, traces of your data may remain after the wipe. For example, FRP may contain account IDs, Esim may contain virtual number and everything attached to it, and external storage is SD card data.");
+                root.addView(msg, lp);
 
-				}
-			});
+                android.widget.Button bDisable = new android.widget.Button(MainActivity.this);
+                bDisable.setText(isRussianDevice ? "Отключить" : "Disable");
+                bDisable.setOnClickListener(v1 -> {
+                    EsimWipeSwitch.setChecked(false);
+                    prefsWipeEsim.edit().putBoolean(KEY_WIPE_ESIM, false).apply();
+                    android.widget.Toast.makeText(MainActivity.this, isRussianDevice ? "ВЫКЛЮЧЕНО" : "DISABLED", android.widget.Toast.LENGTH_SHORT).show();
+                    if (confirmWipeFlagsDialog != null) confirmWipeFlagsDialog.dismiss();
+                });
+                root.addView(bDisable, lp);
+
+                android.widget.Button bCancel = new android.widget.Button(MainActivity.this);
+                bCancel.setText(isRussianDevice ? "Отмена" : "Cancel");
+                bCancel.setOnClickListener(v1 -> {
+                    EsimWipeSwitch.setChecked(true);
+                    if (confirmWipeFlagsDialog != null) confirmWipeFlagsDialog.dismiss();
+                });
+                root.addView(bCancel, lp);
+
+                confirmWipeFlagsDialog = new android.app.AlertDialog.Builder(MainActivity.this)
+                    .setTitle(isRussianDevice ? "Подтверждение" : "Confirmation")
+                    .setView(root)
+                    .setCancelable(false)
+                    .create();
+
+                confirmWipeFlagsDialog.show();
+
+                android.view.Window window = confirmWipeFlagsDialog.getWindow();
+                if (window != null) {
+                    android.view.WindowManager.LayoutParams lp2 = window.getAttributes();
+                    lp2.gravity = android.view.Gravity.CENTER;
+                    lp2.x = 0;
+                    lp2.y = 0;
+                    window.setAttributes(lp2);
+                }
+            } else {
+                EsimWipeSwitch.setChecked(true);
+                prefsWipeEsim.edit().putBoolean(KEY_WIPE_ESIM, true).apply();
+                android.widget.Toast.makeText(MainActivity.this, isRussianDevice ? "ВКЛЮЧЁН СБРОС ESIM/ВНЕШНЕГО ХРАНИЛИЩА/FRP" : "ENABLED WIPE ESIM/EXTERNAL STORAGE/FRP", android.widget.Toast.LENGTH_SHORT).show();
+            }
+        }
+        return true;
+    }});
 
 
 
@@ -1091,8 +1410,8 @@ public class MainActivity extends Activity {
 		final Switch ScrOFFWipeSwitch = new Switch(this);
 		ScrOFFWipeSwitch.setText(
 			isRussianDevice
-			? "СБРОС ДАННЫХ ПРИ ВЫКЛЮЧЕНИИ ЭКРАНА (работает лучше если клавиатура включена и назначена по умолчанию, потому что это помогает процессу приложения стабильно работать в фоне)"
-			: "WIPE DATA ON SCREEN OFF (works better if keyboard enabled and assigned by default because it helps app process work stable in background)"
+			? "СБРОС ДАННЫХ ПРИ ВЫКЛЮЧЕНИИ ЭКРАНА."
+			: "WIPE DATA ON SCREEN OFF."
 		);
 
 		ScrOFFWipeSwitch.setChecked(prefsWipeScrOFF.getBoolean(KEY_WIPE_SCROFF, false));
@@ -1149,8 +1468,8 @@ public class MainActivity extends Activity {
 		final Switch chargingBlockSwitch = new Switch(this);
 		chargingBlockSwitch.setText(
 			isRussianDevice
-			? "Стирать данные при зарядке. Может защитить от USB атак, где атакующий притворяется зарядным устройством. Но отключайте эту опцию перед обычной зарядкой или просто отключайте телефон. Пока телефон отключён, приложение не активно. Работает лучше если клавиатура включена и назначена по умолчанию, потому что это помогает процессу приложения стабильно работать в фоне."
-			: "Wipe data on charging. May protect against USB attacks where the attacker tries to simulate a charger. But please disable this option before regular charging or just turn off the phone. While the phone is turned off, this app is not active. Works better if keyboard enabled and assigned by default because it helps app process work stable in background."
+			? "Стирать данные при зарядке. Может защитить от USB атак, где атакующий притворяется зарядным устройством. Но отключайте эту опцию перед обычной зарядкой или просто отключайте телефон. Пока телефон отключён, приложение не активно."
+			: "Wipe data on charging. May protect against USB attacks where the attacker tries to simulate a charger. But please disable this option before regular charging or just turn off the phone. While the phone is turned off, this app is not active."
 		);
 
 
@@ -1165,7 +1484,7 @@ public class MainActivity extends Activity {
 						final boolean currentState = chargingBlockSwitch.isChecked();
 
 						if (!currentState) {
-							new AlertDialog.Builder(MainActivity.this)
+							chargingWarningDialog = new AlertDialog.Builder(MainActivity.this)
 								.setTitle(isRussianDevice ? "Подтверждение" : "Confirmation")
 								.setMessage(isRussianDevice
 											? "Вы уверены? Если вы прямо сейчас заряжаете телефон, то данные могут стереться прямо сейчас"
@@ -1202,8 +1521,8 @@ public class MainActivity extends Activity {
 		noNetworkWipeSwitch = new Switch(this);
 		noNetworkWipeSwitch.setText(
 			isRussianDevice
-			? "Сброс если нет мобильной сети больше 3 минут и НЕ включён режим полёта. Это способ детектирования пакета Фарадея. Отключайте когда едите там где сеть может пропадать без причины. ! Запускает активити 'черный экран' каждые 30 секунд пока сеть отключена и при выключении экрана чтобы предотвратить сон устройства, потому что если сеть отключена, во время сна нельзя стереть данные. Также блокирует экран при первом запуске для большей защиты. Необходимо разрешение 'Телефон' (READ_PHONE_STATE) для отслеживания сети. Работает лучше если клавиатура включена и назначена по умолчанию а также включены спецвозможности, потому что это помогает процессу приложения лучше работать в фоне и дает право на запуск Activity из фона."
-			: "Reset if there's no mobile network connection for more than 3 minutes and the phone isn't in airplane mode. This is a Faraday bug detection method. Disable this when traveling to places where network connection may drop out without reason. ! Starts 'black screen' activity every 30 seconds while network is off and when the screen turns off to block device sleep, because if network disabled, in sleep wipe data may not work. Also locks the screen on first launch for better protection. The 'Phone' (READ_PHONE_STATE) permission is required to monitor the network. Works better if keyboard enabled and assigned by default and acessibility is enabled because it helps app process work better in background and gives right to launch Activity from the background."
+			? "Сброс если нет мобильной сети больше 3 минут и НЕ включён режим полёта. Это способ детектирования пакета Фарадея. Отключайте когда едите там где сеть может пропадать без причины. Запускает окно 'черный экран' каждые 30 секунд пока сеть отключена и при выключении экрана чтобы предотвратить сон устройства. Также блокирует экран при первом запуске для большей защиты. Требует разрешение 'Телефон' и Спецвозможности для запуска чёрного экрана и мониторинга состояния сети."
+			: "Reset if there's no mobile network connection for more than 3 minutes and the phone isn't in airplane mode. This is a Faraday bug detection method. Disable this when traveling to places where network connection may drop out without reason. Starts 'black screen' window every 30 seconds while network is off and when the screen turns off to block device sleep. Also locks the screen on first launch for better protection. Requires 'Phone' permission and Accessibility to start black screen and monitor network state."
 		);
 
 		Context dpContextForNetwork = getApplicationContext().createDeviceProtectedStorageContext();
@@ -1271,12 +1590,12 @@ public class MainActivity extends Activity {
 
 					float textPx = (float) Math.sqrt(
 						dm.widthPixels * dm.heightPixels
-					) * 0.020f;
+					) * 0.023f;
 
 					if ("ru".equalsIgnoreCase(Locale.getDefault().getLanguage())) {
 						textPx = (float) Math.sqrt(
 							dm.widthPixels * dm.heightPixels
-						) * 0.019f;
+						) * 0.022f;
 					}
 
 					EsimWipeSwitch.setTextSize(TypedValue.COMPLEX_UNIT_PX, textPx);
@@ -1300,7 +1619,7 @@ public class MainActivity extends Activity {
 					layout.addView(screenOnWipeSwitch);
 					layout.addView(ae);
 
-					final Button AdditionalOptionsBack = new Button(MainActivity.this);
+					AdditionalOptionsBack = new Button(MainActivity.this);
 					AdditionalOptionsBack.setText(isRussianDevice ? "Основное Меню" : "Main Menu");	
 					AdditionalOptionsBack.setOnClickListener(new View.OnClickListener() {
 							@Override
@@ -1321,6 +1640,7 @@ public class MainActivity extends Activity {
 						});
 					layout.addView(AdditionalOptionsBack);
 					setContentView(layout);
+					showAdditionalOptionsWarning(AdditionalOptionsBack);
 				}
 			});
 
