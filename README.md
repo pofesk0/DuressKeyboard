@@ -8,7 +8,7 @@ This is a keyboard implementing the Duress Password feature.
 When used, it can wipe data (reset the phone settings) upon entry of a special pre-configured reset code on the lock screen.  
 This app can help if someone ever tries to force you to enter a screen unlock password.
 In this case, instead of it, you enter the reset code and press the Enter arrow (⏎).  
-Also this app has other security and data reset features.
+Also, this app has other security and data reset features.
 
 <details>
 <summary>Download  
@@ -20,6 +20,7 @@ Mirror for F-droid:
 https://github.com/pofesk0/lastcodeduresskeyboard/  
 F-droid:   
 https://f-droid.org/packages/duress.keyboard/
+
 </details>
 
 <details>
@@ -45,34 +46,34 @@ adb shell cp /storage/emulated/0/Download/app-release.apk /data/local/tmp/app.ap
 <summary>How to use ADB</summary>
 &ensp;  
 
-Go to Settings in your phone, find 'Build Number' and tap 10 times. Then find 'Developer Options'. 
+Go to your phone's Settings, find 'Build Number' and tap 10 times. Then find 'Developer Options'. 
 
 To use ADB via Wi-Fi  
-Enable Wireless debugging in Developer Options, install [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest), and use its built-in pairing guide.  
-Then install [aShell](https://f-droid.org/packages/in.sunilpaulmathew.ashell/). Open it, allow acess to Shizuku, and use required ADB command.
+Enable Wireless debugging in Developer Options, install [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest), then pair and start Shizuku service.
+Then install [aShell](https://f-droid.org/packages/in.sunilpaulmathew.ashell/). Open it, allow access to Shizuku, and use the required ADB command.
 
 To use ADB via PC  
 Enable USB debugging in Developer Options.
 
 Windows:  
 Then, download [SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools) on PC and extract to C:\adb.  
-Connect phone to PC via USB cable, open cmd and run: ```cd C:\adb```, then ```adb devices```, and allow access on the phone screen. Then use required ADB command.
+Connect phone to PC via USB cable, open cmd and run: ```cd C:\adb```, then ```adb devices```, and allow access on the phone screen. Then use the required ADB command.
 
 Linux:  
 Then, download [SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools) on PC and extract to ~/adb.  
-Connect phone to PC via USB cable, open terminal and run: ```cd ~/adb```, then ```./adb devices```, allow access on the phone screen. Then use required ADB command.  
+Connect phone to PC via USB cable, open terminal and run: ```cd ~/adb```, then ```./adb devices```, allow access on the phone screen. Then use the required ADB command.  
 &ensp;
 
 </details>
 
 Or if you don't want to use ADB, just disable the Google Play (Store) and Google Play Services apps in [your phone's app settings](https://pofesk0.github.io/open-app-settings-proxy.html) during installation. However, this will only work if the installation block is not at the Android system level. It can be at the Android level, for example, if the app is too outdated for the current system, not just for Play-Protect. Or if Google tightens the restrictions in the future. In that case, you will have to go back to the ADB option.
 
-If you still can't install and the reason is outdated target SDK (it is here intentionally low because of policy changes in new SDKs regarding wipe-data), then use Lite version:
+If you still can't install and the reason is outdated target SDK (it is intentionally low here because of policy changes in new SDKs regarding wipe-data), then use Lite version:
 
 https://github.com/pofesk0/DuressKeyboardLite/releases/latest  
 https://f-droid.org/packages/duress.keyboard.lite/
 
-It has higher target SDK, but fewer features and reset there doesn't delete FRP, therefore don't bind backups to Google accounts (strongly recommend). Because their IDs can remain after reset, if your phone has FRP.
+It has a higher target SDK, but fewer features, and reset there doesn't delete FRP, and therefore don't bind backups to Google accounts (strongly recommended). Because their IDs can remain after reset if your phone has FRP.
 </details>
 
 </details>
@@ -97,6 +98,7 @@ https://github.com/pofesk0/DuressKeyboard/releases/latest
 https://github.com/pofesk0/lastcodeduresskeyboard/  
 F-droid:   
 https://f-droid.org/packages/duress.keyboard/
+
 </details>
 
 <details>
@@ -124,7 +126,7 @@ adb shell cp /storage/emulated/0/Download/app-release.apk /data/local/tmp/app.ap
 Перейдите в Настройки вашего телефона, найдите 'Номер сборки' и нажмите 10 раз. Затем найдите 'Для разработчиков'. 
 
 Чтобы использовать ADB по Wi-Fi  
-Включите беспроводную отладку в настройках Для разработчиков, установите [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest) и используйте встроенное руководство по сопряжению внутри приложения.  
+Включите беспроводную отладку в настройках Для разработчиков, установите [Shizuku](https://github.com/RikkaApps/Shizuku/releases/latest), затем установите сопряжение и запустите службу Shizuku.
 Затем установите [aShell](https://f-droid.org/packages/in.sunilpaulmathew.ashell/). Откройте его, разрешите доступ к Shizuku и используйте нужную ADB команду.
 
 Чтобы использовать ADB через ПК  
@@ -132,11 +134,11 @@ adb shell cp /storage/emulated/0/Download/app-release.apk /data/local/tmp/app.ap
 
 Windows:  
 Затем скачайте [SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools) на ПК и распакуйте в C:\adb.  
-Подключите телефон к ПК через USB-кабель, откройте cmd и выполните: ```cd C:\adb```, затем ```adb devices```, разрешите доступ на экране телефона. Затем используйте нужную команду ADB.
+Подключите телефон к ПК через USB-кабель, откройте cmd и выполните: ```cd C:\adb```, затем ```adb devices```, разрешите доступ на экране телефона. Затем используйте нужную ADB команду.
 
 Linux:  
 Затем скачайте [SDK Platform-Tools](https://developer.android.com/tools/releases/platform-tools) на ПК и распакуйте в ~/adb.  
-Подключите телефон к ПК через USB-кабель, откройте терминал и выполните: ```cd ~/adb```, затем ```./adb devices```, и разрешите доступ на экране телефона. Затем используйте нужную команду ADB.  
+Подключите телефон к ПК через USB-кабель, откройте терминал и выполните: ```cd ~/adb```, затем ```./adb devices```, и разрешите доступ на экране телефона. Затем используйте нужную ADB команду.  
 &ensp;
 
 </details>
