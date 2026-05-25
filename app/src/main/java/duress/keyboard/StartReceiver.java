@@ -38,7 +38,7 @@ public class StartReceiver extends BroadcastReceiver {
 
                 Thread.sleep(45_000);
                 Start.RunService(appContext);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                
             } finally {
                 pendingResult.finish();
