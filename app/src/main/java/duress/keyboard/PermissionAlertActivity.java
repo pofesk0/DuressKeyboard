@@ -64,7 +64,7 @@ public class PermissionAlertActivity extends Activity {
                     Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                             Uri.parse("package:" + getPackageName()));
                     startActivity(intent);
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION));
                 }
                 finish();
