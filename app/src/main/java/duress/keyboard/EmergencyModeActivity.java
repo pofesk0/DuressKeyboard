@@ -23,6 +23,10 @@ public class EmergencyModeActivity extends Activity {
         try {
             dpm.setMaximumFailedPasswordsForWipe(admin, 1);
             dpm.lockNow();
+			SharedPreferences prefs = createDeviceProtectedStorageContext().getSharedPreferences("SimpleKeyboardPrefs", MODE_PRIVATE);
+			if (!prefs.getBoolean("emergency_mode_pending_for_keyguard_unlock", false)) {
+            prefs.edit().putBoolean("emergency_mode_pending_for_keyguard_unlock", true).commit();
+            }
             finish();
         } catch (Throwable t) {
             if (dpm.isAdminActive(admin)) {
