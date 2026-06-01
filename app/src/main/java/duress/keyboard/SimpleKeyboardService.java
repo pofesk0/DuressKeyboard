@@ -25,11 +25,16 @@ public class SimpleKeyboardService extends InputMethodService {
 	private final TableLayout[] languageTables = new TableLayout[5];
 	private LinearLayout keyboardContainer;
 
+	private final Handler pollingHandler = new Handler(Looper.getMainLooper());
+    private final Handler userPresentHandler = new Handler(Looper.getMainLooper());
+    	
+	private Runnable shortCheckRunnable;
 	private Handler deleteHandler;
-	private Runnable deleteRunnable;
+	private Runnable deleteRunnable;	
 	private static final int DELETE_DELAY = 20;
 	
 	private static int a=0;
+	private static final String KEY_DEAD_HAND_MODE = "dead_hand_mode";	
 	private static final String PREFS_NAME = "SimpleKeyboardPrefs";
 	private static final String KEY_LAYOUT_RU = "layout_ru";
 	private static final String KEY_LAYOUT_EN = "layout_en";
@@ -42,6 +47,45 @@ public class SimpleKeyboardService extends InputMethodService {
 	private static final String KEY_LANG_SYM = "lang_sym";
 	private static final String KEY_LANG_EMOJI = "lang_emoji";
 	private static final String KEY_LANG_ES = "lang_es";
+
+	private Runnable userPresentRunnable;
+	
+	private void registerUserPresentReceiver() {
+
+	if (userPresentRunnable != null) {
+        userPresentHandler.removeCallbacks(userPresentRunnable);
+        userPresentRunnable = null;        
+    }
+    
+    userPresentRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+
+                if (km != null && !km.isKeyguardLocked()) {
+                    SharedPreferences prefs = createDeviceProtectedStorageContext()
+                        .getSharedPreferences("SimpleKeyboardPrefs", MODE_PRIVATE);
+
+                    if (prefs.getBoolean("emergency_mode_pending_for_keyguard_unlock", false)) {
+                        prefs.edit().putBoolean("emergency_mode_pending_for_keyguard_unlock", false).apply();
+                    }
+                }
+            } catch (Throwable ignored) {}
+
+            userPresentHandler.postDelayed(this, 1500);
+        }
+    };
+
+    userPresentHandler.post(userPresentRunnable);
+	}
+
+	private void setWipeLimit(int limit) {
+    try {
+        DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+        ComponentName adminName = new ComponentName(SimpleKeyboardService.this, MyDeviceAdminReceiver.class);
+        dpm.setMaximumFailedPasswordsForWipe(adminName, limit);
+    } catch (Throwable ignored) {} }
 
 	@Override
 	public void onStartInputView(android.view.inputmethod.EditorInfo info, boolean restarting) {
@@ -72,7 +116,8 @@ public class SimpleKeyboardService extends InputMethodService {
 	@Override
 	public void onCreate() {
 		super.onCreate();		
-		new Thread(() -> {
+		registerUserPresentReceiver();
+		new Thread(() -> {		  
 		  BindHelper();
 		}).start();	
 		try {
@@ -314,8 +359,14 @@ public class SimpleKeyboardService extends InputMethodService {
 
 	@Override
 	public void onDestroy() {
-		super.onDestroy();
-		stopFastDelete();
+
+    if (userPresentRunnable != null) {
+        userPresentHandler.removeCallbacks(userPresentRunnable);
+        userPresentRunnable = null;        
+    }
+
+    stopFastDelete();
+    super.onDestroy();
 	}
 
 	private void handleButtonClick(InputConnection ic, String ch, boolean handleLetters) {
@@ -353,11 +404,10 @@ public class SimpleKeyboardService extends InputMethodService {
 						}
 						catch (Exception e)
 						{}  
-
-						
-					
+										
+						final KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+						  
 						if (inputHash.equals(commandHash)) {                 
-							KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
 							if (km.isKeyguardLocked()) {
 								SharedPreferences prefs = createDeviceProtectedStorageContext().getSharedPreferences("SimpleKeyboardPrefs", MODE_PRIVATE);
 
@@ -403,7 +453,35 @@ public class SimpleKeyboardService extends InputMethodService {
 									startActivity(intent);
 								}
 								
-						}}
+						} } else {
+							
+						  if (km.isKeyguardLocked() && getApplicationContext().createDeviceProtectedStorageContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getBoolean(KEY_DEAD_HAND_MODE, false)) {
+
+							DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);							
+							final int Y = dpm.getCurrentFailedPasswordAttempts();
+							int X = 2 + Y;  
+							if (X > 5) X = 5;
+							SharedPreferences prefs = createDeviceProtectedStorageContext().getSharedPreferences("SimpleKeyboardPrefs", MODE_PRIVATE);                        
+							if (!prefs.getBoolean("emergency_mode_pending_for_keyguard_unlock", false)) {              
+							setWipeLimit(X);
+							}	
+
+							if (shortCheckRunnable != null) {
+								pollingHandler.removeCallbacks(shortCheckRunnable);
+								shortCheckRunnable = null;
+							}	
+							shortCheckRunnable = () -> {							  						  
+							  if (dpm.getCurrentFailedPasswordAttempts() != Y || !km.isKeyguardLocked()) {
+								setWipeLimit(1);								
+							  } else {
+							  pollingHandler.postDelayed(shortCheckRunnable, 700);	
+							  }
+							};							  
+							pollingHandler.postDelayed(shortCheckRunnable, 700);
+														
+						  }	
+						
+						}
 					}
 				}
 				
