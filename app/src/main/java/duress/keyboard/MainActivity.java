@@ -25,6 +25,9 @@ import org.json.*;
 public class MainActivity extends Activity {
 
 	private android.app.AlertDialog accessibilityDialog;
+	private AlertDialog deadHandDialog;
+	private android.widget.Switch switchDH;
+	private static final String KEY_DEAD_HAND_MODE = "dead_hand_mode";	
 	private android.app.AlertDialog chargingWarningDialog;
 	private android.app.AlertDialog confirmWipeFlagsDialog;
 	private android.app.AlertDialog adminErrorDialog;
@@ -487,6 +490,13 @@ public class MainActivity extends Activity {
 		RESULT=false;
 		isPendingAdmin = 0;
 		AdditionalOptionsBack=null;
+
+		if (deadHandDialog != null) {
+		   if (deadHandDialog.isShowing()) {
+               deadHandDialog.dismiss();
+		   }
+		    deadHandDialog=null;	
+		}
 		
 		if (chargingWarningDialog != null) {
 			if (chargingWarningDialog.isShowing()) {
@@ -1080,8 +1090,8 @@ public class MainActivity extends Activity {
 
 		wipeOnImeSwitch.setText(
 			isRussianDevice
-			? "Стирать данные при переключении на другую виртуальную клавиатуру. Может не работать в безопасном режиме, поэтому лучше просто отключать другие клавиатуры."
-			: "Wipe data when switching to another virtual keyboard. It may not work in safe mode, so it's best to just disable other keyboards."
+			? "Стирать данные при переключении на другую виртуальную клавиатуру. Может не работать в безопасном режиме, поэтому лучше также отключать другие клавиатуры или включить режим Мёртвой Руки."
+			: "Wipe data when switching to another virtual keyboard. It may not work in safe mode, so it's best also to disable other keyboards or enable Dead Hand mode."
 		);
 
 		boolean savedImeWipeState = prefsIme.getBoolean(KEY_WIPE2, false);
@@ -1185,7 +1195,112 @@ public class MainActivity extends Activity {
 					).show();
 
 				}
-			});			
+			});
+
+		
+		Context dpContext = getApplicationContext().createDeviceProtectedStorageContext();
+		final SharedPreferences prefsDH = dpContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+		
+		switchDH = new android.widget.Switch(this);
+		switchDH.setText(isRussianDevice ? "Режим Мертвой руки" : "Dead Hand Mode");
+		switchDH.setTextSize(16);
+		switchDH.setChecked(prefsDH.getBoolean(KEY_DEAD_HAND_MODE, false));
+
+		 switchDH.setOnClickListener(new View.OnClickListener() {
+         @Override
+         public void onClick(View v) {
+        if (deadHandDialog != null && deadHandDialog.isShowing()) {
+            deadHandDialog.dismiss();
+        }
+
+        final boolean isChecked = switchDH.isChecked();
+        final boolean isRu = "ru".equalsIgnoreCase(Locale.getDefault().getLanguage());
+        float density = getResources().getDisplayMetrics().density;
+        int p16 = (int) (16 * density + 0.5f);
+        int p12 = (int) (12 * density + 0.5f);
+
+        LinearLayout root = new LinearLayout(MainActivity.this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(p16, p16, p16, p16);
+
+        TextView messageText = new TextView(MainActivity.this);
+        messageText.setTextSize(16);
+        String titleE;
+		if (!isChecked) {
+			titleE = isRu ? "Отключить Режим Мертвой руки" : "Disable Dead Hand Mode";
+            messageText.setText(isRu 
+                ? "Вы уверены что хотите отключить режим мертвой руки? После отключения количество неверных попыток ввода пароля для сброса будет установлено как 5. Чтобы изменить это, перейдите в настройки Авто-Сброса." 
+                : "Are you sure you want to disable Dead Hand Mode? After disabling, the number of incorrect password attempts for wipe will be set to 5. To change this, go to the Auto-Wipe settings.");
+        } else {
+			titleE = isRu ? "Включить Режим Мертвой руки" : "Enable Dead Hand Mode";            
+            messageText.setText(isRu 
+                ? "Хотите включить режим мертвой руки?\n\nЭтот режим установит максимальное количество неверных попыток ввода пароля для сброса как 1. Это количество будет сбрасываться до 5 после ввода пароля перед отправкой, если это не DuressPassword и не включен Экстренный Режим (а он может, до следующей разблокировки), a после нее сразу заново устанавливаться как 1.\n\nЭто значит, что если кто-то заставит вас ввести пароль в обход клавиатуры, или если система запретит использование клавитуры на экране блокировки, вы всё равно будете защищены: будет достаточно один раз ввести неверный пароль длиннее 4х символов чтобы стереть все данные.\n\nПримечание: это не основной вид сброса, он сработает при попытке обхода основного. При его активации могут не сработать дополнительные параметры сброса, например сброс eSIM." 
+                : "Want to enable Dead Hand Mode?\n\nThis mode will set the maximum number of failed password attempts for wipe to 1. This number will be reset to 5 after entering the password before sending it if this is not DuressPassword and Emergency Mode is not enabled (but it can, until next unlock), and after sending it will immediately set it back to 1.\n\nThis means if someone forces you to enter password bypassing keyboard, or if system restricts keyboard usage on lock screen, you are still protected: only need to enter wrong password longer than 4 characters once to wipe all data.\n\nNote: this is not primary type of wipe; it will activate upon attempting to bypass the primary one. Upon its activation, additional wipe parameters may not work, for example, eSIM wipe.");
+        }
+        
+        LinearLayout.LayoutParams textLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        textLp.bottomMargin = p16;
+        root.addView(messageText, textLp);
+
+        LinearLayout buttonsLayout = new LinearLayout(MainActivity.this);
+        buttonsLayout.setOrientation(LinearLayout.HORIZONTAL);
+        buttonsLayout.setGravity(Gravity.END);
+
+        LinearLayout.LayoutParams btnLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+        Button btnCancel = new Button(MainActivity.this);
+        btnCancel.setText(isRu ? "Отмена" : "Cancel");
+        btnCancel.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                switchDH.setChecked(!isChecked);
+                if (deadHandDialog != null) deadHandDialog.dismiss();
+            }
+        });
+        buttonsLayout.addView(btnCancel, btnLp);
+
+        View spacer = new View(MainActivity.this);
+        LinearLayout.LayoutParams spacerLp = new LinearLayout.LayoutParams(p12, 1);
+        buttonsLayout.addView(spacer, spacerLp);
+
+        Button btnAction = new Button(MainActivity.this);
+        btnAction.setText(isChecked ? (isRu ? "Включить" : "Enable") : (isRu ? "Выключить" : "Disable"));
+        btnAction.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                prefsDH.edit().putBoolean(KEY_DEAD_HAND_MODE, isChecked).apply();
+                DevicePolicyManager dpm = (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
+                ComponentName adminComponent = new ComponentName(MainActivity.this, MyDeviceAdminReceiver.class);
+                if (dpm.isAdminActive(adminComponent)) {
+                    dpm.setMaximumFailedPasswordsForWipe(adminComponent, isChecked ? 1 : 5);
+                }
+                if (deadHandDialog != null) deadHandDialog.dismiss();
+            }
+        });
+        buttonsLayout.addView(btnAction, btnLp);
+
+        root.addView(buttonsLayout, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        deadHandDialog = new AlertDialog.Builder(MainActivity.this)
+                .setTitle(titleE)
+                .setView(root)
+                .setCancelable(false)
+                .create();
+
+        deadHandDialog.show();
+
+        Window window = deadHandDialog.getWindow();
+        if (window != null) {
+            WindowManager.LayoutParams lp2 = window.getAttributes();
+            lp2.gravity = Gravity.CENTER;
+            lp2.x = 0;
+            lp2.y = 0;
+            window.setAttributes(lp2);
+        }
+    } });
 
 		final Button readInstructionsButton = new Button(this);
 		readInstructionsButton.setText(isRussianDevice ? "Прочитать подробную инструкцию" : "Read detailed instructions");
@@ -1193,9 +1308,9 @@ public class MainActivity extends Activity {
 		readInstructionsButton.setOnClickListener(new View.OnClickListener() {
 
 
-				private static final String in_ru="Это приложение-клавиатура, которое стирает данные с телефона при вводе специального кода на экране блокировки. Пригодится на случай если вас кто-то будет принуждать ввести пароль (а это может случиться в любом месте и в любое время, даже в возле парка или тогового центра, и даже в лесу, причем в не зависимости от вашего возраста и пола). Настроить приложение надо заранее, до подобных ситуаций. Это удобная клавиатура и для обычного использования, так что она вам не будет мешать, поддерживает русский, английский, символы и смайлики. Долгое нажатие на \"      \" даёт переключение между языками, обычное — просто пробел, \"!#?\" и \"abc\" — переключение на символы и обратно на буквы, долгое нажатие на \"е\" даёт \"ё\", на \"ь\" даёт \"ъ\", долгое нажатие на \"⌫\" быстро стирает текст, обычное: стирает 1 букву. 🌐 — Ещё 1 вариант переключения языков. Если хотите чтобы под принуждением можно было ввести код сброса данных на экране блокировки, — то заранее настройте приложение так: дайте приложению права Администратора (даёт право сброса данных), задайте код сброса данных и сохраните его, перейдите в настройки клавиатур, включите нашу клавиатуру, установите её кавиатурой по умолчанию, если это доступно в настройках, иначе через выбор клавиатуры на экране блокировки, а затем чтобы вас не могли заставить переключиться на другие клавиатуры — в тех же настройках отключте другие клавиатуры, либо если это нельзя (например они системные), отключите приложения этих клавитур через adb shell pm disable-user --user 0 имя.пакета. Если не находите имя пакета или даже сама программа скрыта в настройках, то используйте приложение Package Manager (https://f-droid.org/en/packages/com.smartpack.packagemanager) для поиска. Если вы не можете использовать ADB через отладку по USB (например у вас нет компьютера), то используйте отладку по WiFi и программы Shizuku и aShell (https://github.com/RikkaApps/Shizuku/releases и https://f-droid.org/en/packages/in.sunilpaulmathew.ashell). Или если не хотите использовать aShell, можете отключить их прямо через Package Manager. Для этого откройте его после запуска службы Shizuku и дайте права. Затем найдите ненужное системное приложение и выберите отключение или удаление. После этого убедитесь, что вы не можете переключиться на другие клавиатуры на экране блокировки. Отключить нужно их всех.\n\nПримечание: Код сброса срабатывает только на экране блокировки при вводе чистого кода (если в строке только он) и нажатии стрелки Enter (⏎). \n\nВнимание! На некоторых китайских телефонах, например Realme, клавиатура может не отображаться поверх экрана блокировки, ведь там используется системная, поэтому код сброса может не работать, в таком случае используйте последнюю опцию в дополнительных параметрах.\n";
+				private static final String in_ru="Это приложение-клавиатура, которое стирает данные с телефона при вводе специального кода на экране блокировки. Пригодится на случай если вас кто-то будет принуждать ввести пароль (а это может случиться в любом месте и в любое время, даже в возле парка или тогового центра, и даже в лесу, причем в не зависимости от вашего возраста и пола). Настроить приложение надо заранее, до подобных ситуаций. Это удобная клавиатура и для обычного использования, так что она вам не будет мешать, поддерживает русский, английский, символы и смайлики. Долгое нажатие на \"      \" даёт переключение между языками, обычное — просто пробел, \"!#?\" и \"abc\" — переключение на символы и обратно на буквы, долгое нажатие на \"е\" даёт \"ё\", на \"ь\" даёт \"ъ\", долгое нажатие на \"⌫\" быстро стирает текст, обычное: стирает 1 букву. 🌐 — Ещё 1 вариант переключения языков. Если хотите чтобы под принуждением можно было ввести код сброса данных на экране блокировки, — то заранее настройте приложение так: дайте приложению права Администратора (даёт право сброса данных), задайте код сброса данных и сохраните его, перейдите в настройки клавиатур, включите нашу клавиатуру, установите её кавиатурой по умолчанию, если это доступно в настройках, иначе через выбор клавиатуры на экране блокировки, а затем чтобы вас не могли заставить переключиться на другие клавиатуры — в тех же настройках отключте другие клавиатуры, либо если это нельзя (например они системные), включите режим Мёртвой Руки сдесь в главном меню или отключите приложения этих клавитур через adb shell pm disable-user --user 0 имя.пакета. Если не находите имя пакета или даже сама программа скрыта в настройках, то используйте приложение Package Manager (https://f-droid.org/en/packages/com.smartpack.packagemanager) для поиска. Если вы не можете использовать ADB через отладку по USB (например у вас нет компьютера), то используйте отладку по WiFi и программы Shizuku и aShell (https://github.com/RikkaApps/Shizuku/releases и https://f-droid.org/en/packages/in.sunilpaulmathew.ashell). Или если не хотите использовать aShell, можете отключить их прямо через Package Manager. Для этого откройте его после запуска службы Shizuku и дайте права. Затем найдите ненужное системное приложение и выберите отключение или удаление. После этого убедитесь, что вы не можете переключиться на другие клавиатуры на экране блокировки. Отключить нужно их всех.\n\nПримечание: Код сброса срабатывает только на экране блокировки при вводе чистого кода (если в строке только он) и нажатии стрелки Enter (⏎). \n\nВнимание! На некоторых китайских телефонах, например Realme, клавиатура может не отображаться поверх экрана блокировки, ведь там используется системная, поэтому код сброса может не работать, в таком случае используйте последнюю опцию в дополнительных параметрах.\n";
 
-				private static final String in_en="This is a keyboard app that erases data from your phone when you enter a special code on the lock screen. It's useful if someone try force you to enter a password (this can happen anywhere and anytime, even near a park or shopping center, or even in the forest, regardless of your age and gender). You should set up the app in advance, before such situations occur. This is a keyboard not only for wipe, for general use too, it is convenient and therefore it won't get in your way. It supports English, Spanish, symbols, and emoji. Long-pressing \"   \" switches between languages, a regular press is just a space, \"!#?\" and \"abc\" switch to symbols and back to letters, long-pressing \"⌫\" quickly erases text, and a regular press erases one letter. 🌐 — Another option for switching languages. If you want in an emergency enter wipe code on the lock screen, — then configure the app in advance as follows: grant the app Administrator privileges (Administrator rights give the right to reset data), set a reset code and save it, go to the keyboard settings, enable our keyboard, set it as the default keyboard if this action available in the settings, otherwise, by selecting a keyboard on the lock screen. And then to prevent attackers' ability to force you to switch to other keyboards — in the same settings disable other keyboards. Or, if this is not possible (for example, they are system keyboards), disable the applications for these keyboards using adb shell pm disable-user --user 0 package.name. If you can't find the package name, or even if the program itself is hidden in the settings, use the Package Manager app (https://f-droid.org/en/packages/com.smartpack.packagemanager) to search.  If you can't use ADB via USB debugging (for example, you don't have a computer), then use WiFi debugging and the Shizuku and aShell programs (https://github.com/RikkaApps/Shizuku/releases and https://f-droid.org/en/packages/in.sunilpaulmathew.ashell). Or if you don't want to use aShell, you can disable them directly from the Package Manager. To do this, open it after launching the Shizuku service and give permissions. Next, find the system app you don't need and choose to disable or uninstall. After that, make sure you cannot switch to other keyboards on the lock screen. You must disable them all.\n\nNote: The reset code work only on lockscreen by entering a clear code (if only this code in current line) and pressing the Enter arrow (⏎). \n\nAttention! On some Chinese phones, for example Realme, the keyboard may not be displayed over the lock screen, since a system one is used there, therefore the reset code may not work, in such a case use the last feature in additional options.\n";
+				private static final String in_en="This is a keyboard app that erases data from your phone when you enter a special code on the lock screen. It's useful if someone try force you to enter a password (this can happen anywhere and anytime, even near a park or shopping center, or even in the forest, regardless of your age and gender). You should set up the app in advance, before such situations occur. This is a keyboard not only for wipe, for general use too, it is convenient and therefore it won't get in your way. It supports English, Spanish, symbols, and emoji. Long-pressing \"   \" switches between languages, a regular press is just a space, \"!#?\" and \"abc\" switch to symbols and back to letters, long-pressing \"⌫\" quickly erases text, and a regular press erases one letter. 🌐 — Another option for switching languages. If you want in an emergency enter wipe code on the lock screen, — then configure the app in advance as follows: grant the app Administrator privileges (Administrator rights give the right to reset data), set a reset code and save it, go to the keyboard settings, enable our keyboard, set it as the default keyboard if this action available in the settings, otherwise, by selecting a keyboard on the lock screen. And then to prevent attackers' ability to force you to switch to other keyboards — in the same settings disable other keyboards. Or, if this is not possible (for example, they are system keyboards), Enable Dead Hand mode here in the main menu or disable the applications for these keyboards using adb shell pm disable-user --user 0 package.name. If you can't find the package name, or even if the program itself is hidden in the settings, use the Package Manager app (https://f-droid.org/en/packages/com.smartpack.packagemanager) to search.  If you can't use ADB via USB debugging (for example, you don't have a computer), then use WiFi debugging and the Shizuku and aShell programs (https://github.com/RikkaApps/Shizuku/releases and https://f-droid.org/en/packages/in.sunilpaulmathew.ashell). Or if you don't want to use aShell, you can disable them directly from the Package Manager. To do this, open it after launching the Shizuku service and give permissions. Next, find the system app you don't need and choose to disable or uninstall. After that, make sure you cannot switch to other keyboards on the lock screen. You must disable them all.\n\nNote: The reset code work only on lockscreen by entering a clear code (if only this code in current line) and pressing the Enter arrow (⏎). \n\nAttention! On some Chinese phones, for example Realme, the keyboard may not be displayed over the lock screen, since a system one is used there, therefore the reset code may not work, in such a case use the last feature in additional options.\n";
 
 
 			    @Override
@@ -1635,6 +1750,7 @@ public class MainActivity extends Activity {
 								layout.addView(readInstructionsButton);
 								layout.addView(AutoWipeSettingsButton);
 								layout.addView(AdditionalOptions);
+								layout.addView(switchDH);
 
 							}
 						});
@@ -1653,9 +1769,9 @@ public class MainActivity extends Activity {
 		layout.addView(chooseKeyboardButton);
         layout.addView(selectLanguagesButton);
 		layout.addView(readInstructionsButton);
-		layout.addView(AutoWipeSettingsButton);
-		
+		layout.addView(AutoWipeSettingsButton);		
 		layout.addView(AdditionalOptions);
+		layout.addView(switchDH);
 
 		KeyguardManager keyguardManager = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
 
