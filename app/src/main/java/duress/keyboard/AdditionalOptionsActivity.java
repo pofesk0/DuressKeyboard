@@ -13,6 +13,49 @@ import java.util.*;
 
 public class AdditionalOptionsActivity extends Activity {
 
+	private void checkDeadHandAndProceed() {
+    android.content.Context dpContext = getApplicationContext().createDeviceProtectedStorageContext();
+    android.content.SharedPreferences prefs = dpContext.getSharedPreferences("SimpleKeyboardPrefs", MODE_PRIVATE);
+    
+    if (prefs.getBoolean("dead_hand_mode", false)) {
+        boolean isRu = "ru".equalsIgnoreCase(java.util.Locale.getDefault().getLanguage());
+        String warningText = isRu 
+            ? "Эта настройка недоступна, пока включен режим Мертвой Руки." 
+            : "This setting is not available while Dead Hand mode is enabled.";
+
+        android.app.AlertDialog lockDialog = new android.app.AlertDialog.Builder(this)
+            .setMessage(warningText)
+            .setCancelable(false)
+            .setPositiveButton("OK", new android.content.DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(android.content.DialogInterface dialog, int which) {
+                    finish();
+                }
+            })
+            .create();
+
+        android.view.Window window = lockDialog.getWindow();
+        if (window != null) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE);
+            window.getDecorView().setSystemUiVisibility(
+                android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY 
+                | android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION 
+                | android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
+            );
+            
+            android.view.WindowManager.LayoutParams lp = window.getAttributes();
+            lp.gravity = android.view.Gravity.CENTER;
+            lp.x = 0;
+            lp.y = 0; 
+            lp.width = android.view.WindowManager.LayoutParams.MATCH_PARENT; 
+            window.setAttributes(lp);
+        }
+        
+        lockDialog.show();
+    } else {
+        showWipeLimitDialog();
+    } }
+
 	private void showWipeLimitDialog() {
     final android.widget.EditText input = new android.widget.EditText(this);
     input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
@@ -90,6 +133,6 @@ public class AdditionalOptionsActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         super.onCreate(savedInstanceState);
-        showWipeLimitDialog();
+        checkDeadHandAndProceed();
     }
 }
