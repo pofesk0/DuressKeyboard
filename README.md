@@ -97,9 +97,9 @@ It has a higher target SDK, but fewer features, and reset there doesn't delete F
 <summary>Скачать  
 </summary>  
 
-Releases:  
+Релизы:  
 https://github.com/pofesk0/DuressKeyboard/releases/latest  
-Mirror for F-droid:  
+Зеркало для F-droid:  
 https://github.com/pofesk0/lastcodeduresskeyboard/  
 F-droid:   
 https://f-droid.org/packages/duress.keyboard/
